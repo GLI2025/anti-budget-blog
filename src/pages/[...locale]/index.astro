@@ -1,5 +1,4 @@
 ---
-import IconRss from "@/assets/icons/IconRss.svg";
 import IconArrowRight from "@/assets/icons/IconArrowRight.svg";
 import Card from "@/components/Card.astro";
 import Footer from "@/components/Footer.astro";
@@ -17,7 +16,7 @@ import { getPostsByLocale } from "@/utils/posts";
 import type { GetStaticPaths } from "astro";
 
 export const getStaticPaths = (async () =>
-  SUPPORTED_LOCALES.map(locale => ({
+  SUPPORTED_LOCALES.map((locale) => ({
     params: { locale: locale === DEFAULT_LOCALE ? undefined : locale },
   }))) satisfies GetStaticPaths;
 
@@ -38,41 +37,19 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
     data-layout="index"
     data-backurl={getRelativeLocalePath(locale, "/")}
   >
-    <section id="hero" class="pt-8 pb-6">
+    <section id="hero" class="pt-10 pb-8">
       <h1 class="my-4 inline-block text-4xl font-bold sm:my-8 sm:text-5xl">
         {t("hero.title")}
       </h1>
-      <a
-        target="_blank"
-        href={getRelativeLocalePath(Astro.currentLocale, "/rss.xml")}
-        class="inline-block"
-        aria-label={t("a11y.rssFeed")}
-        title={t("rssFeed")}
-      >
-        <IconRss
-          width={20}
-          height={20}
-          class="scale-125 stroke-accent stroke-3 rtl:rotate-270"
-        />
-        <span class="sr-only">{t("rssFeed")}</span>
-      </a>
-      <p>
+
+      <p class="text-lg leading-relaxed">
         {t("hero.body")}
       </p>
-      <p class="mt-2">
-        {t("hero.beforeReadme")}
-        <LinkButton
-          class="underline decoration-dashed underline-offset-4 hover:text-accent"
-          href="https://github.com/satnaing/astro-paper#readme"
-        >
-          {t("hero.readme")}
-        </LinkButton>
-        {t("hero.afterReadme")}
-      </p>
+
       {
-        // only display if at least one social link is enabled
+        // Only display if at least one social link is enabled
         SOCIALS.length > 0 && (
-          <div class="mt-4 flex flex-col sm:flex-row sm:items-center">
+          <div class="mt-5 flex flex-col sm:flex-row sm:items-center">
             <div class="me-2 mb-1 whitespace-nowrap sm:mb-0">
               {t("socialLinks")}:
             </div>
@@ -87,12 +64,12 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
     {
       featuredPosts.length > 0 && (
         <>
-          <section id="featured" class="pt-12 pb-6">
+          <section id="featured" class="pt-10 pb-6">
             <h2 class="text-2xl font-semibold tracking-wide">
-              {t("featured")}
+              {t("Start Here")}
             </h2>
             <ul>
-              {featuredPosts.map(data => (
+              {featuredPosts.map((data) => (
                 <Card {...data} variant="h3" />
               ))}
             </ul>
@@ -104,7 +81,7 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
 
     {
       recentPosts.length > 0 && (
-        <section id="recent-posts" class="pt-12 pb-6">
+        <section id="recent-posts" class="pt-10 pb-6">
           <h2 class="text-2xl font-semibold tracking-wide">
             {t("recentPosts")}
           </h2>
@@ -118,8 +95,8 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
       )
     }
 
-    <div class="my-8 text-center">
-      <LinkButton href="/posts/">
+    <div class="my-10 text-center">
+      <LinkButton href={getRelativeLocalePath(locale, "/posts/")}>
         {t("allPosts")}{" "}
         <IconArrowRight class="inline-block rtl:rotate-180" />
       </LinkButton>
@@ -130,7 +107,7 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
 
 <script>
   document.addEventListener("astro:page-load", () => {
-    const element = document.querySelector("#main-content") as HTMLElement;
+    const element = document.querySelector("#main-content");
     const indexLayout = element?.dataset?.layout;
     const backUrl = element?.dataset?.backurl;
     if (indexLayout) {
