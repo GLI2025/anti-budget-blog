@@ -2,18 +2,25 @@ import type { I18nStrings } from "@/i18n/types";
 
 const baseStrings = {
   "site.title": "Anti-Budget Money",
-  "site.desc": "A modern update to remove budgets and reach your money goals.",
+  "site.desc": "Simple money systems that work without spreadsheets or guilt.",
 };
 
 const ENLocale: I18nStrings = {
   ...baseStrings,
+
   "hero.title": "Anti-Budget",
   "hero.body": `
-        The Anti Budget system is a clean and modern way to manage your finances without setting up a budget. Do you think Oprah sets a dining out budget and tracks her grocery bill? Why should you? Let's discuss the tried and true method to use. 
-`,
-  "hero.beforeReadme": "Read the blog posts or check",
-  "hero.readme": "README",
-  "hero.afterReadme": "for more info.",
+A modern way to manage money without tracking every category.
+No “dining out budget.” No shame spirals. Just a simple system that makes progress automatic.
+
+Start with “Start Here” and set up the basics in under 30 minutes.
+`.trim(),
+
+
+  "posts.desc": "All the posts so far.",
+  featured: "Start Here",
+  recentPosts: "More posts",
+
   copy: "copy",
   copied: "copied",
   by: "by",
