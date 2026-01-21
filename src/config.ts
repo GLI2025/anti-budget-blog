@@ -1,7 +1,7 @@
 export const SITE = {
-  website: "https://astro-paper-i18n.netlify.app/", // replace this with your deployed domain
-  author: "Yousef Elsayed",
-  profile: "https://yousef8.github.io/astro-paper-i18n",
+  website: "www.antibudgetmoney.com", // replace this with your deployed domain
+  author: "BGlass",
+  profile: "https://antibudgetmoney.com",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
   postPerIndex: 4,
