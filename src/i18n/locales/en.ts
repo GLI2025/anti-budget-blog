@@ -1,18 +1,15 @@
 import type { I18nStrings } from "@/i18n/types";
 
 const baseStrings = {
-  "site.title": "AstroPaper I18n",
-  "site.desc": "A fork of AstroPaper theme with support for I18n",
+  "site.title": "Anti-Budget Money",
+  "site.desc": "A modern update to remove budgets and reach your money goals.",
 };
 
 const ENLocale: I18nStrings = {
   ...baseStrings,
-  "hero.title": "Mingalaba",
+  "hero.title": "Anti-Budget",
   "hero.body": `
-        AstroPaper is a minimal, responsive, accessible and SEO-friendly Astro
-        blog theme. This theme follows best practices and provides accessibility
-        out of the box. Light and dark mode are supported by default. Moreover,
-        additional color schemes can also be configured.
+        The Anti Budget system is a clean and modern way to manage your finances without setting up a budget. Do you think Oprah sets a dining out budget and tracks her grocery bill? Why should you? Let's discuss the tried and true method to use. 
 `,
   "hero.beforeReadme": "Read the blog posts or check",
   "hero.readme": "README",
