@@ -2,10 +2,11 @@
 author: Brandon Glass
 pubDatetime: 2026-01-20T15:00:00Z
 modDatetime: 2026-01-20T15:00:00Z
-title: Start Here — The Anti-Budget
-slug: start-here
-featured: true
+title: How to set up your Anti-Budget accounts
+slug: how-to-set-up-your-anti-budget-accounts
+featured: false
 draft: false
+
 tags:
   - anti-budget
   - systems
