@@ -59,7 +59,8 @@ const defaults = {
         </p>
       </header>
 
-      <section class="rounded-2xl border border-black/10 bg-white/50 p-5">
+      <section class="mt-6 rounded-2xl border border-black/10 bg-white/70 p-5 dark:bg-black/20 ...">
+
         <div class="grid gap-4 md:grid-cols-2">
           <div>
             <label class="text-sm font-medium">Personal Use Weeks (per year)</label>
@@ -107,106 +108,154 @@ const defaults = {
         </div>
       </section>
 
-      <section class="mt-6 rounded-2xl border border-black/10 bg-white/50 p-5">
-        <h2 class="text-xl font-semibold">Results</h2>
-        <div class="mt-4 overflow-auto">
-          <table class="w-full border-collapse text-sm">
-            <thead>
-              <tr class="bg-black/5">
-                <th class="border border-black/10 p-2 text-left">Year</th>
-                <th class="border border-black/10 p-2 text-right">Tax Treatment</th>
-                <th class="border border-black/10 p-2 text-right">Personal Use (weeks)</th>
-                <th class="border border-black/10 p-2 text-right">Charter Net Worth</th>
-                <th class="border border-black/10 p-2 text-right">Buy Net Worth</th>
-                <th class="border border-black/10 p-2 text-right">Delta (Buy - Charter)</th>
-                <th class="border border-black/10 p-2 text-right">Owner Rental Income</th>
-                <th class="border border-black/10 p-2 text-right">Owner Op Cost</th>
-                <th class="border border-black/10 p-2 text-right">Allowed Deductions</th>
-                <th class="border border-black/10 p-2 text-right">Taxable Income From Rent</th>
-              </tr>
-            </thead>
-            <tbody id="resultsBody"></tbody>
-          </table>
-        </div>
+      <section class="mt-6 rounded-2xl border border-black/10 bg-white/50 p-5 dark:border-white/10 dark:bg-white/5">
+  <h2 class="text-xl font-semibold">Results</h2>
 
-        <p class="mt-4 text-xs opacity-70">
-          Assumptions (simplified): no depreciation recapture, no financing, no sale taxes, straight-line market value path,
-          and a simplified vacation-home limitation when personal use &gt; 14 days. Educational only, not tax advice.
-        </p>
-      </section>
+  <!-- sanity-check highlights -->
+  <div class="mt-3 grid gap-3 md:grid-cols-3">
+    <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
+      <div class="opacity-70">Tax mode</div>
+      <div id="modeValue" class="font-semibold"></div>
+    </div>
+    <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
+      <div class="opacity-70">5Y Charter Net Worth</div>
+      <div id="charter5y" class="font-semibold"></div>
+    </div>
+    <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
+      <div class="opacity-70">5Y Buy Net Worth</div>
+      <div id="buy5y" class="font-semibold"></div>
+    </div>
+  </div>
+
+  <div id="taxBanner" class="mt-3 text-sm opacity-80"></div>
+
+  <!-- table wrapper -->
+  <div class="mt-4 overflow-x-auto rounded-xl border border-black/10 dark:border-white/10">
+    <table class="min-w-[1100px] w-full border-collapse text-sm">
+      <thead class="bg-black/5 dark:bg-white/10">
+        <tr>
+          <th class="p-3 text-left font-semibold">Year</th>
+          <th class="p-3 text-right font-semibold">Tax Treatment</th>
+          <th class="p-3 text-right font-semibold">Personal Use (wks)</th>
+          <th class="p-3 text-right font-semibold">Charter Net Worth</th>
+          <th class="p-3 text-right font-semibold">Buy Net Worth</th>
+          <th class="p-3 text-right font-semibold">Delta (Buy - Charter)</th>
+          <th class="p-3 text-right font-semibold">Owner Rental Income</th>
+          <th class="p-3 text-right font-semibold">Owner Op Cost</th>
+          <th class="p-3 text-right font-semibold">Allowed Deductions</th>
+          <th class="p-3 text-right font-semibold">Taxable Income From Rent</th>
+        </tr>
+      </thead>
+
+      <!-- IMPORTANT: explicit row styling so it doesn't disappear in theme styles -->
+      <tbody id="resultsBody" class="bg-white/80 text-black dark:bg-black/20 dark:text-white"></tbody>
+    </table>
+  </div>
+
+  <p class="mt-4 text-xs opacity-70">
+    Assumptions (simplified): no depreciation recapture, no financing, no sale taxes, straight-line market value path,
+    and a simplified vacation-home limitation when personal use &gt; 14 days. Educational only, not tax advice.
+  </p>
+</section>
+
     </article>
 
     <script type="module">
-      import { runBuyVsCharter } from "@/utils/boatCalc";
+  import { runBuyVsCharter } from "@/utils/boatCalc";
 
-      const $ = (id) => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
-      const money = (x) =>
-        typeof x === "number" ? "$" + x.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "";
+  const fmtMoney0 = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
 
-      const readNumber = (id) => {
-        const el = $(id);
-        const v = Number(el?.value ?? 0);
-        return Number.isFinite(v) ? v : 0;
-      };
+  const fmtNum = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
-      function render(rows) {
-        const body = $("resultsBody");
-        body.innerHTML = rows
-          .map((r) => {
-            return `
-              <tr>
-                <td class="border border-black/10 p-2 text-left">${r.year}</td>
-                <td class="border border-black/10 p-2 text-right">${r.taxTreatment}</td>
-                <td class="border border-black/10 p-2 text-right">${r.personalUseWeeks}</td>
-                <td class="border border-black/10 p-2 text-right">${money(r.charterNetWorth)}</td>
-                <td class="border border-black/10 p-2 text-right">${money(r.buyNetWorth)}</td>
-                <td class="border border-black/10 p-2 text-right">${money(r.deltaBuyMinusCharter)}</td>
-                <td class="border border-black/10 p-2 text-right">${money(r.ownerRentalIncome)}</td>
-                <td class="border border-black/10 p-2 text-right">${money(r.ownerOpCost)}</td>
-                <td class="border border-black/10 p-2 text-right">${r.allowedDeductions === "" ? "" : money(r.allowedDeductions)}</td>
-                <td class="border border-black/10 p-2 text-right">${r.taxableIncomeFromRent === "" ? "" : money(r.taxableIncomeFromRent)}</td>
-              </tr>
-            `;
-          })
-          .join("");
+  const money = (x) => (typeof x === "number" ? fmtMoney0.format(x) : "");
+  const num = (x) => (typeof x === "number" ? fmtNum.format(x) : "");
 
-        const mode = rows[0]?.taxTreatment ?? "";
-        $("taxBanner").textContent =
-          mode === "SecondHome/Residence"
-            ? "Tax mode: Second Home / Residence (personal use > 14 days). Bonus depreciation disabled (simplified)."
-            : "Tax mode: Business Asset (personal use ≤ 14 days). 100% bonus depreciation in 2026 enabled (simplified).";
-      }
+  const readNumber = (id) => {
+    const el = $(id);
+    const v = Number(el?.value ?? 0);
+    return Number.isFinite(v) ? v : 0;
+  };
 
-      function recalc() {
-        const inputs = {
-          purchasePrice: 1200000,
+  function render(rows) {
+    const body = $("resultsBody");
 
-          charterRatePerWeek: readNumber("charterRatePerWeek"),
-          charterWeeksPerYear: readNumber("charterWeeksPerYear"),
+    body.innerHTML = rows
+      .map((r, idx) => {
+        const zebra = idx % 2 === 0 ? "background: rgba(0,0,0,0.03);" : "";
+        const bold = r.year === "5Y Summary" ? "font-weight: 700;" : "";
 
-          ownerCharterRatePerWeek: readNumber("ownerCharterRatePerWeek"),
-          ownerCharterWeeksPerYear: readNumber("ownerCharterWeeksPerYear"),
+        return `
+          <tr style="${zebra}${bold}">
+            <td class="p-3 text-left">${r.year}</td>
+            <td class="p-3 text-right">${r.taxTreatment}</td>
+            <td class="p-3 text-right">${num(r.personalUseWeeks)}</td>
+            <td class="p-3 text-right">${money(r.charterNetWorth)}</td>
+            <td class="p-3 text-right">${money(r.buyNetWorth)}</td>
+            <td class="p-3 text-right">${money(r.deltaBuyMinusCharter)}</td>
+            <td class="p-3 text-right">${money(r.ownerRentalIncome)}</td>
+            <td class="p-3 text-right">${money(r.ownerOpCost)}</td>
+            <td class="p-3 text-right">${r.allowedDeductions === "" ? "" : money(r.allowedDeductions)}</td>
+            <td class="p-3 text-right">${r.taxableIncomeFromRent === "" ? "" : money(r.taxableIncomeFromRent)}</td>
+          </tr>
+        `;
+      })
+      .join("");
 
-          personalUseWeeks: readNumber("personalUseWeeks"),
+    const mode = rows[0]?.taxTreatment ?? "";
+    const summary = rows.find((x) => x.year === "5Y Summary") ?? rows[rows.length - 1];
 
-          operatingCostRate: 0.10,
-          resalePctAfter5y: readNumber("resalePctAfter5y"),
+    // Fill the summary boxes
+    $("modeValue").textContent = mode;
+    $("charter5y").textContent = money(summary.charterNetWorth);
+    $("buy5y").textContent = money(summary.buyNetWorth);
 
-          taxRate: 0.37,
-          opportunityReturn: 0.09,
+    // Put the message in the Results banner
+    $("taxBanner").textContent =
+      mode === "SecondHome/Residence"
+        ? "Tax mode: Second Home / Residence (personal use > 14 days). Bonus depreciation disabled (simplified)."
+        : "Tax mode: Business Asset (personal use ≤ 14 days). 100% bonus depreciation in 2026 enabled (simplified).";
 
-          startYear: 2026,
-          horizonYears: 5,
-        };
+    // Optional: show same message up top if you kept taxBannerTop
+    const top = $("taxBannerTop");
+    if (top) top.textContent = $("taxBanner").textContent;
+  }
 
-        const rows = runBuyVsCharter(inputs);
-        render(rows);
-      }
+  function recalc() {
+    const inputs = {
+      purchasePrice: 1200000,
 
-      $("recalcBtn").addEventListener("click", recalc);
-      recalc();
-    </script>
+      charterRatePerWeek: readNumber("charterRatePerWeek"),
+      charterWeeksPerYear: readNumber("charterWeeksPerYear"),
+
+      ownerCharterRatePerWeek: readNumber("ownerCharterRatePerWeek"),
+      ownerCharterWeeksPerYear: readNumber("ownerCharterWeeksPerYear"),
+
+      personalUseWeeks: readNumber("personalUseWeeks"),
+
+      operatingCostRate: 0.10,
+      resalePctAfter5y: readNumber("resalePctAfter5y"),
+
+      taxRate: 0.37,
+      opportunityReturn: 0.09,
+
+      startYear: 2026,
+      horizonYears: 5,
+    };
+
+    const rows = runBuyVsCharter(inputs);
+    render(rows);
+  }
+
+  $("recalcBtn").addEventListener("click", recalc);
+  recalc();
+</script>
+
   </Main>
 
   <Footer />
