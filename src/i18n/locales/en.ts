@@ -27,7 +27,7 @@ Start with “Start Here” and set up the basics in under 30 minutes.
   about: "About",
   socialLinks: "Social Links",
   home: "Home",
-  posts: "Posts",
+
   "posts.desc": "All the articles I've posted.",
   tag: "Tag",
   "tag.desc": 'All the articles with the tag "{name}".',
@@ -35,10 +35,10 @@ Start with “Start Here” and set up the basics in under 30 minutes.
   "tags.desc": "All the tags used in posts",
   archives: "Archives",
   "archives.desc": "All the articles I've archived.",
-  featured: "Featured",
-  recentPosts: "Recent Posts",
+  
+  
   tableOfContents: "Table of contents",
-  "tableOfContents.desc": "Open Table of contents",
+  
   allPosts: "All Posts",
   search: "Search",
   "search.desc": "Search any article",
