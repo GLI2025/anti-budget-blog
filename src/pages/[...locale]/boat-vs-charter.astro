@@ -189,27 +189,27 @@ const defaults = {
       <section class="mt-6 rounded-2xl border border-black/10 bg-white/70 p-5 dark:border-white/10 dark:bg-black/20">
         <h2 class="text-xl font-semibold">Results</h2>
 
-        <div class="mt-3 grid gap-3 md:grid-cols-3">
-          <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
-            <div class="opacity-70">Tax mode</div>
-            <div id="modeValue" class="font-semibold"></div>
-          </div>
+       <div class="mt-3 grid gap-3 md:grid-cols-4">
+  <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
+    <div class="opacity-70">Tax Treatment (triggered by personal-use weeks)</div>
+    <div id="modeValue" class="font-semibold"></div>
+  </div>
 
-          <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
-            <div class="opacity-70">5Y Charter Net Worth</div>
-            <div id="charter5y" class="font-semibold"></div>
-          </div>
+  <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
+    <div class="opacity-70">After 5 Years: Charter Path (invested cash left)</div>
+    <div id="charter5y" class="font-semibold"></div>
+  </div>
 
-          <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
-            <div class="opacity-70">5Y Buy Net Worth</div>
-            <div id="buy5y" class="font-semibold"></div>
-          </div>
-        </div>
+  <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
+    <div class="opacity-70">After 5 Years: Own Path (boat + cash)</div>
+    <div id="buy5y" class="font-semibold"></div>
+  </div>
 
-      <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
-        <div class="opacity-70">5Y Delta (Buy − Charter)</div>
-        <div id="delta5y" class="font-semibold"></div>
-      </div>
+  <div class="rounded-xl border border-black/10 bg-white/70 p-3 text-sm dark:border-white/10 dark:bg-black/20">
+    <div class="opacity-70">Bottom line after 5 years</div>
+    <div id="delta5y" class="font-semibold"></div>
+  </div>
+</div>
 
 
         <div id="taxBanner" class="mt-3 text-sm opacity-80"></div>
@@ -403,29 +403,59 @@ const defaults = {
       .join("");
 
     // Summary cards
-    const modeValue = $("modeValue");
-    const charter5y = $("charter5y");
-    const buy5y = $("buy5y");
-    if (modeValue) modeValue.textContent = mode;
-    if (charter5y) charter5y.textContent = money(summary.charterNetWorth);
-    if (buy5y) buy5y.textContent = money(summary.buyNetWorth);
-    const delta5y = $("delta5y");
-    if (delta5y) delta5y.textContent = money(summary.deltaBuyMinusCharter);
-const shield = mode === "Business Asset" ? 1200000 * 0.37 : 0;
-$("taxBanner").textContent += ` Estimated 2026 tax shield: ${money(shield)}.`;
+const modeValue = $("modeValue");
+const charter5y = $("charter5y");
+const buy5y = $("buy5y");
+const delta5y = $("delta5y");
+const verdict = $("resultsVerdict");
 
+if (modeValue) modeValue.textContent = mode;
+if (charter5y) charter5y.textContent = money(summary.charterNetWorth);
+if (buy5y) buy5y.textContent = money(summary.buyNetWorth);
+if (delta5y) delta5y.textContent = money(summary.deltaBuyMinusCharter);
 
+// Banner text (match your new display strings)
+const isResidence =
+  mode === "Second Home / Residence" ||
+  mode === "Second Home" ||
+  mode === "SecondHome/Residence";
 
-    const bannerText =
-      mode === "SecondHome/Residence"
-        ? "Tax mode: Second Home / Residence (personal use > 14 days). Bonus depreciation disabled (simplified)."
-        : "Tax mode: Business Asset (personal use ≤ 14 days). 100% bonus depreciation in 2026 enabled (simplified).";
+const baseBannerText = isResidence
+  ? "Tax treatment: Second Home / Residence (personal use > 14 days). Bonus depreciation disabled (simplified)."
+  : "Tax treatment: Business Asset (personal use ≤ 14 days). 100% bonus depreciation in 2026 enabled (simplified).";
 
-    const taxBanner = $("taxBanner");
-    if (taxBanner) taxBanner.textContent = bannerText;
-    const top = $("taxBannerTop");
-    if (top) top.textContent = bannerText;
-  }
+// Optional “tax shield” add-on (only if business asset)
+const shield = !isResidence ? 1200000 * 0.37 : 0;
+const bannerText = !isResidence
+  ? `${baseBannerText} Estimated 2026 tax shield: ${money(shield)}.`
+  : baseBannerText;
+
+// Write banners (safe)
+const taxBanner = $("taxBanner");
+if (taxBanner) taxBanner.textContent = bannerText;
+
+const top = $("taxBannerTop");
+if (top) top.textContent = bannerText;
+
+// Plain-English verdict line (recommended)
+if (verdict) {
+  const d = Number(summary.deltaBuyMinusCharter ?? 0);
+  const abs = Math.abs(d);
+
+  const winner =
+    d > 0
+      ? `Buying is ahead by ${money(abs)} after 5 years.`
+      : d < 0
+        ? `Chartering is ahead by ${money(abs)} after 5 years.`
+        : `It’s a tie after 5 years.`;
+
+  const explain = isResidence
+    ? "Because personal use exceeds 14 days, vacation-home limits apply and bonus depreciation is off (simplified)."
+    : "Because personal use is within 14 days, the model applies business treatment and bonus depreciation in 2026 (simplified).";
+
+  verdict.textContent = `${winner} ${explain}`;
+}
+
 
   function recalc() {
     const inputs = {
