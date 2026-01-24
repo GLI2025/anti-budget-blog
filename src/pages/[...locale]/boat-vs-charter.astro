@@ -192,120 +192,216 @@ const defaults = {
       </section>
     </article>
 
-    <script type="module">
-      import { runBuyVsCharter } from "../../utils/boatCalc";
+   <script type="module">
+  const $ = (id) => document.getElementById(id);
 
-      const $ = (id) => document.getElementById(id);
+  const fmtMoney0 = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
+  const fmtNum = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
-      // Quick visible proof the script is running:
-      const modeEl = $("modeValue");
-      if (modeEl) modeEl.textContent = "JS loaded ✅";
+  const money = (x) => (typeof x === "number" ? fmtMoney0.format(x) : "");
+  const num = (x) => (typeof x === "number" ? fmtNum.format(x) : "");
 
-      const fmtMoney0 = new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
+  const readNumber = (id) => {
+    const el = $(id);
+    const v = Number(el?.value ?? 0);
+    return Number.isFinite(v) ? v : 0;
+  };
+
+  // ---------- Calculator logic (no imports) ----------
+  const round2 = (x) => Math.round(x * 100) / 100;
+
+  function personalUseTriggersResidence(personalUseWeeks) {
+    // > 14 days == > 2 weeks
+    return personalUseWeeks > 2;
+  }
+
+  function clampDeductionsToIncomeIfResidence(residenceRule, rentalIncome, deductions) {
+    if (!residenceRule) return deductions;
+    return Math.min(deductions, Math.max(0, rentalIncome));
+  }
+
+  function runBuyVsCharter(i) {
+    const n = i.horizonYears;
+    const years = Array.from({ length: n + 1 }, (_, t) => i.startYear + t);
+
+    const residenceRule = personalUseTriggersResidence(i.personalUseWeeks);
+
+    const annualOpCost = i.purchasePrice * i.operatingCostRate;
+    const annualRentalIncome = i.ownerCharterRatePerWeek * i.ownerCharterWeeksPerYear;
+    const annualCharterSpend = i.charterRatePerWeek * i.charterWeeksPerYear;
+
+    // 100% bonus depreciation in year 0 only when business asset (simplified)
+    const bonusDepr = residenceRule ? 0 : i.purchasePrice;
+
+    // Charter path: keep the purchase capital invested
+    let charterInvested = i.purchasePrice;
+
+    // Buy path: accumulate after-tax operating cashflows + boat market value
+    let buyCash = 0;
+
+    // Straight-line market value to resalePct after n years
+    const boatMarketValue = (t) => {
+      if (t <= 0) return i.purchasePrice;
+      const endVal = i.purchasePrice * i.resalePctAfter5y;
+      return i.purchasePrice + (endVal - i.purchasePrice) * (t / n);
+    };
+
+    const ownerAfterTaxNet = (t) => {
+      const rentalIncome = annualRentalIncome;
+      let deductions = annualOpCost;
+
+      if (t === 0 && !residenceRule) deductions += bonusDepr;
+
+      const allowed = clampDeductionsToIncomeIfResidence(residenceRule, rentalIncome, deductions);
+      const taxable = rentalIncome - allowed;
+      const tax = Math.max(0, taxable) * i.taxRate;
+
+      const afterTax = (rentalIncome - annualOpCost) - tax;
+      return { afterTax, taxable, allowed };
+    };
+
+    const rows = [];
+
+    for (let t = 0; t <= n; t++) {
+      const yr = years[t];
+
+      // charter: grow invested capital, then pay charter cost each year
+      if (t > 0) charterInvested *= (1 + i.opportunityReturn);
+      charterInvested += -annualCharterSpend;
+
+      // buy: add after-tax operating cashflow
+      const { afterTax, taxable, allowed } = ownerAfterTaxNet(t);
+      buyCash += afterTax;
+
+      let buyNW = boatMarketValue(t) + buyCash;
+      if (t === n) buyNW = buyCash + boatMarketValue(t);
+
+      rows.push({
+        year: String(yr),
+        taxTreatment: residenceRule ? "SecondHome/Residence" : "BusinessAsset",
+        personalUseWeeks: i.personalUseWeeks,
+
+        charterNetWorth: round2(charterInvested),
+        buyNetWorth: round2(buyNW),
+        deltaBuyMinusCharter: round2(buyNW - charterInvested),
+
+        ownerRentalIncome: round2(annualRentalIncome),
+        ownerOpCost: round2(annualOpCost),
+        allowedDeductions: round2(allowed),
+        taxableIncomeFromRent: round2(taxable),
       });
+    }
 
-      const fmtNum = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+    const last = rows[rows.length - 1];
+    rows.push({
+      year: "5Y Summary",
+      taxTreatment: last.taxTreatment,
+      personalUseWeeks: last.personalUseWeeks,
 
-      const money = (x) => (typeof x === "number" ? fmtMoney0.format(x) : "");
-      const num = (x) => (typeof x === "number" ? fmtNum.format(x) : "");
+      charterNetWorth: last.charterNetWorth,
+      buyNetWorth: last.buyNetWorth,
+      deltaBuyMinusCharter: last.deltaBuyMinusCharter,
 
-      const readNumber = (id) => {
-        const el = $(id);
-        const v = Number(el?.value ?? 0);
-        return Number.isFinite(v) ? v : 0;
-      };
+      ownerRentalIncome: last.ownerRentalIncome,
+      ownerOpCost: last.ownerOpCost,
+      allowedDeductions: "",
+      taxableIncomeFromRent: "",
+    });
 
-      function render(rows) {
-        const body = $("resultsBody");
-        if (!body) return;
+    return rows;
+  }
 
-        const mode = rows?.[0]?.taxTreatment ?? "";
-        const summary = rows.find((x) => x.year === "5Y Summary") ?? rows[rows.length - 1];
+  // ---------- Rendering ----------
+  function render(rows) {
+    const body = $("resultsBody");
+    if (!body) return;
 
-        const trBase = "text-black dark:text-white border-b border-black/10 dark:border-white/10";
-        const tdLeft = "p-3 text-left whitespace-nowrap";
-        const tdRight = "p-3 text-right whitespace-nowrap tabular-nums";
-        const tdRightWide = "p-3 text-right whitespace-nowrap tabular-nums min-w-[140px]";
+    const mode = rows?.[0]?.taxTreatment ?? "";
+    const summary = rows.find((x) => x.year === "5Y Summary") ?? rows[rows.length - 1];
 
-        body.innerHTML = rows
-          .map((r, idx) => {
-            const isSummary = r.year === "5Y Summary";
-            const zebraClass = idx % 2 === 0 ? "bg-black/0 dark:bg-white/0" : "bg-black/5 dark:bg-white/5";
-            const summaryClass = isSummary ? "bg-emerald-500/10 dark:bg-emerald-400/10 font-semibold" : "";
+    const trBase = "text-black dark:text-white border-b border-black/10 dark:border-white/10";
+    const tdLeft = "p-3 text-left whitespace-nowrap";
+    const tdRight = "p-3 text-right whitespace-nowrap tabular-nums";
+    const tdRightWide = "p-3 text-right whitespace-nowrap tabular-nums min-w-[140px]";
 
-            return `
-              <tr class="${trBase} ${zebraClass} ${summaryClass}">
-                <td class="${tdLeft}">${r.year}</td>
-                <td class="${tdRight}">${r.taxTreatment}</td>
-                <td class="${tdRight}">${num(r.personalUseWeeks)}</td>
-                <td class="${tdRightWide}">${money(r.charterNetWorth)}</td>
-                <td class="${tdRightWide}">${money(r.buyNetWorth)}</td>
-                <td class="${tdRightWide}">${money(r.deltaBuyMinusCharter)}</td>
-                <td class="${tdRightWide}">${money(r.ownerRentalIncome)}</td>
-                <td class="${tdRightWide}">${money(r.ownerOpCost)}</td>
-                <td class="${tdRightWide}">${r.allowedDeductions === "" ? "" : money(r.allowedDeductions)}</td>
-                <td class="${tdRightWide}">${r.taxableIncomeFromRent === "" ? "" : money(r.taxableIncomeFromRent)}</td>
-              </tr>
-            `;
-          })
-          .join("");
+    body.innerHTML = rows
+      .map((r, idx) => {
+        const isSummary = r.year === "5Y Summary";
+        const zebraClass = idx % 2 === 0 ? "bg-black/0 dark:bg-white/0" : "bg-black/5 dark:bg-white/5";
+        const summaryClass = isSummary ? "bg-emerald-500/10 dark:bg-emerald-400/10 font-semibold" : "";
 
-        // Summary cards
-        const modeValue = $("modeValue");
-        const charter5y = $("charter5y");
-        const buy5y = $("buy5y");
+        return `
+          <tr class="${trBase} ${zebraClass} ${summaryClass}">
+            <td class="${tdLeft}">${r.year}</td>
+            <td class="${tdRight}">${r.taxTreatment}</td>
+            <td class="${tdRight}">${num(r.personalUseWeeks)}</td>
+            <td class="${tdRightWide}">${money(r.charterNetWorth)}</td>
+            <td class="${tdRightWide}">${money(r.buyNetWorth)}</td>
+            <td class="${tdRightWide}">${money(r.deltaBuyMinusCharter)}</td>
+            <td class="${tdRightWide}">${money(r.ownerRentalIncome)}</td>
+            <td class="${tdRightWide}">${money(r.ownerOpCost)}</td>
+            <td class="${tdRightWide}">${r.allowedDeductions === "" ? "" : money(r.allowedDeductions)}</td>
+            <td class="${tdRightWide}">${r.taxableIncomeFromRent === "" ? "" : money(r.taxableIncomeFromRent)}</td>
+          </tr>
+        `;
+      })
+      .join("");
 
-        if (modeValue) modeValue.textContent = mode;
-        if (charter5y) charter5y.textContent = money(summary.charterNetWorth);
-        if (buy5y) buy5y.textContent = money(summary.buyNetWorth);
+    // Summary cards
+    const modeValue = $("modeValue");
+    const charter5y = $("charter5y");
+    const buy5y = $("buy5y");
+    if (modeValue) modeValue.textContent = mode;
+    if (charter5y) charter5y.textContent = money(summary.charterNetWorth);
+    if (buy5y) buy5y.textContent = money(summary.buyNetWorth);
 
-        const bannerText =
-          mode === "SecondHome/Residence"
-            ? "Tax mode: Second Home / Residence (personal use > 14 days). Bonus depreciation disabled (simplified)."
-            : "Tax mode: Business Asset (personal use ≤ 14 days). 100% bonus depreciation in 2026 enabled (simplified).";
+    const bannerText =
+      mode === "SecondHome/Residence"
+        ? "Tax mode: Second Home / Residence (personal use > 14 days). Bonus depreciation disabled (simplified)."
+        : "Tax mode: Business Asset (personal use ≤ 14 days). 100% bonus depreciation in 2026 enabled (simplified).";
 
-        const taxBanner = $("taxBanner");
-        if (taxBanner) taxBanner.textContent = bannerText;
+    const taxBanner = $("taxBanner");
+    if (taxBanner) taxBanner.textContent = bannerText;
+    const top = $("taxBannerTop");
+    if (top) top.textContent = bannerText;
+  }
 
-        const top = $("taxBannerTop");
-        if (top) top.textContent = bannerText;
-      }
+  function recalc() {
+    const inputs = {
+      purchasePrice: 1200000,
 
-      function recalc() {
-        const inputs = {
-          purchasePrice: 1200000,
+      charterRatePerWeek: readNumber("charterRatePerWeek"),
+      charterWeeksPerYear: readNumber("charterWeeksPerYear"),
 
-          charterRatePerWeek: readNumber("charterRatePerWeek"),
-          charterWeeksPerYear: readNumber("charterWeeksPerYear"),
+      ownerCharterRatePerWeek: readNumber("ownerCharterRatePerWeek"),
+      ownerCharterWeeksPerYear: readNumber("ownerCharterWeeksPerYear"),
 
-          ownerCharterRatePerWeek: readNumber("ownerCharterRatePerWeek"),
-          ownerCharterWeeksPerYear: readNumber("ownerCharterWeeksPerYear"),
+      personalUseWeeks: readNumber("personalUseWeeks"),
 
-          personalUseWeeks: readNumber("personalUseWeeks"),
+      operatingCostRate: 0.10,
+      resalePctAfter5y: readNumber("resalePctAfter5y"),
 
-          operatingCostRate: 0.10,
-          resalePctAfter5y: readNumber("resalePctAfter5y"),
+      taxRate: 0.37,
+      opportunityReturn: 0.09,
 
-          taxRate: 0.37,
-          opportunityReturn: 0.09,
+      startYear: 2026,
+      horizonYears: 5,
+    };
 
-          startYear: 2026,
-          horizonYears: 5,
-        };
+    const rows = runBuyVsCharter(inputs);
+    render(rows);
+  }
 
-        const rows = runBuyVsCharter(inputs);
-        render(rows);
-      }
+  const btn = $("recalcBtn");
+  if (btn) btn.addEventListener("click", recalc);
 
-      const btn = $("recalcBtn");
-      if (btn) btn.addEventListener("click", recalc);
+  recalc();
+</script>
 
-      recalc();
-    </script>
-  </Main>
 
   <Footer />
 </Layout>
