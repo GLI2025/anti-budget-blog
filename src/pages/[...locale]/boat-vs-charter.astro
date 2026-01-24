@@ -59,87 +59,131 @@ const defaults = {
         </p>
       </header>
 
-      <!-- Inputs -->
-      <section class="mt-6 rounded-2xl border border-black/10 bg-white/70 p-5 dark:border-white/10 dark:bg-black/20">
-        <div class="grid gap-6 md:grid-cols-2">
-          <div>
-            <label class="text-sm font-medium">Personal Use Weeks (per year)</label>
-            <input
-              id="personalUseWeeks"
-              class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
-              type="number"
-              step="0.5"
-              value={defaults.personalUseWeeks}
-            />
-          </div>
+ <!-- Inputs -->
+<section class="mt-6 rounded-2xl border border-black/10 bg-white/70 p-5 dark:border-white/10 dark:bg-black/20">
+  <div class="grid gap-6 md:grid-cols-2">
 
-          <div>
-            <label class="text-sm font-medium">Charter Weeks (your personal trips, per year)</label>
-            <input
-              id="charterWeeksPerYear"
-              class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
-              type="number"
-              step="0.5"
-              value={defaults.charterWeeksPerYear}
-            />
-          </div>
+    <!-- Group: How you use the boat -->
+    <div class="md:col-span-2">
+      <h3 class="text-sm font-semibold opacity-70">How you use the boat</h3>
+    </div>
 
-          <div>
-            <label class="text-sm font-medium">Charter Rate (you pay) per week</label>
-            <input
-              id="charterRatePerWeek"
-              class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
-              type="number"
-              step="1000"
-              value={defaults.charterRatePerWeek}
-            />
-          </div>
+    <div>
+      <label class="text-sm font-medium">Your Personal Use (weeks / year)</label>
+      <input
+        id="personalUseWeeks"
+        class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
+        type="number"
+        step="0.5"
+        value={defaults.personalUseWeeks}
+      />
+      <p class="mt-2 text-xs opacity-70">
+        Used only for tax classification. ≤ 2.0 weeks (14 days) = Business Asset (bonus depreciation on). &gt; 2.0 weeks = Second Home rules.
+      </p>
+    </div>
 
-          <div>
-            <label class="text-sm font-medium">Owner Charter-Out Weeks (rent it out) per year</label>
-            <input
-              id="ownerCharterWeeksPerYear"
-              class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
-              type="number"
-              step="0.5"
-              value={defaults.ownerCharterWeeksPerYear}
-            />
-          </div>
+    <div class="hidden md:block"></div>
 
-          <div>
-            <label class="text-sm font-medium">Owner Charter-Out Rate per week (gross)</label>
-            <input
-              id="ownerCharterRatePerWeek"
-              class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
-              type="number"
-              step="1000"
-              value={defaults.ownerCharterRatePerWeek}
-            />
-          </div>
+    <!-- Group: If you didn’t own -->
+    <div class="md:col-span-2 mt-2">
+      <h3 class="text-sm font-semibold opacity-70">If you didn’t own (chartering alternative)</h3>
+    </div>
 
-          <div>
-            <label class="text-sm font-medium">Resale Value after 5 years (% of purchase)</label>
-            <input
-              id="resalePctAfter5y"
-              class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
-              type="number"
-              step="0.01"
-              value={defaults.resalePctAfter5y}
-            />
-          </div>
-        </div>
+    <div>
+      <label class="text-sm font-medium">Charter Weeks / Year</label>
+      <input
+        id="charterWeeksPerYear"
+        class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
+        type="number"
+        step="0.5"
+        value={defaults.charterWeeksPerYear}
+      />
+      <p class="mt-2 text-xs opacity-70">
+        How many weeks you would charter instead of buying.
+      </p>
+    </div>
 
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div id="taxBannerTop" class="text-sm opacity-80"></div>
-          <button
-            id="recalcBtn"
-            class="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-            type="button"
-          >
-            Recalculate
-          </button>
-        </div>
-      </section>
+    <div>
+      <label class="text-sm font-medium">Charter Cost per Week (what you pay)</label>
+      <input
+        id="charterRatePerWeek"
+        class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
+        type="number"
+        step="1000"
+        value={defaults.charterRatePerWeek}
+      />
+      <p class="mt-2 text-xs opacity-70">
+        Your weekly cost when chartering.
+      </p>
+    </div>
+
+    <!-- Group: If you own -->
+    <div class="md:col-span-2 mt-2">
+      <h3 class="text-sm font-semibold opacity-70">If you own (rental income)</h3>
+    </div>
+
+    <div>
+      <label class="text-sm font-medium">Weeks Rented to Others / Year</label>
+      <input
+        id="ownerCharterWeeksPerYear"
+        class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
+        type="number"
+        step="0.5"
+        value={defaults.ownerCharterWeeksPerYear}
+      />
+      <p class="mt-2 text-xs opacity-70">
+        Income-producing weeks when you’re not using the boat.
+      </p>
+    </div>
+
+    <div>
+      <label class="text-sm font-medium">Rental Income per Week (gross)</label>
+      <input
+        id="ownerCharterRatePerWeek"
+        class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
+        type="number"
+        step="1000"
+        value={defaults.ownerCharterRatePerWeek}
+      />
+      <p class="mt-2 text-xs opacity-70">
+        Gross weekly revenue during rental weeks.
+      </p>
+    </div>
+
+    <!-- Group: Exit value -->
+    <div class="md:col-span-2 mt-2">
+      <h3 class="text-sm font-semibold opacity-70">Exit value</h3>
+    </div>
+
+    <div>
+      <label class="text-sm font-medium">Resale Value After 5 Years (% of purchase price)</label>
+      <input
+        id="resalePctAfter5y"
+        class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
+        type="number"
+        step="0.01"
+        value={defaults.resalePctAfter5y}
+      />
+      <p class="mt-2 text-xs opacity-70">
+        Example: 0.65 means resale at ~65% of purchase price.
+      </p>
+    </div>
+
+    <div class="hidden md:block"></div>
+  </div>
+
+  <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+    <div id="taxBannerTop" class="text-sm opacity-80"></div>
+    <button
+      id="recalcBtn"
+      class="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+      type="button"
+    >
+      Recalculate
+    </button>
+  </div>
+</section>
+
 
       <!-- Results -->
       <section class="mt-6 rounded-2xl border border-black/10 bg-white/70 p-5 dark:border-white/10 dark:bg-black/20">
