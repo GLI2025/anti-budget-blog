@@ -61,40 +61,41 @@ const defaults = {
 
       <section class="mt-6 rounded-2xl border border-black/10 bg-white/70 p-5 dark:bg-black/20 ...">
 
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-6 md:grid-cols-2">
+
           <div>
             <label class="text-sm font-medium">Personal Use Weeks (per year)</label>
-            <input id="personalUseWeeks" class="mt-2 w-full rounded-xl border border-black/10 p-3"
+            <input id="personalUseWeeks" class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
               type="number" step="0.5" value={defaults.personalUseWeeks} />
           </div>
 
           <div>
             <label class="text-sm font-medium">Charter Weeks (your personal trips, per year)</label>
-            <input id="charterWeeksPerYear" class="mt-2 w-full rounded-xl border border-black/10 p-3"
+            <input id="charterWeeksPerYear" class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
               type="number" step="0.5" value={defaults.charterWeeksPerYear} />
           </div>
 
           <div>
             <label class="text-sm font-medium">Charter Rate (you pay) per week</label>
-            <input id="charterRatePerWeek" class="mt-2 w-full rounded-xl border border-black/10 p-3"
+            <input id="charterRatePerWeek" class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
               type="number" step="1000" value={defaults.charterRatePerWeek} />
           </div>
 
           <div>
             <label class="text-sm font-medium">Owner Charter-Out Weeks (rent it out) per year</label>
-            <input id="ownerCharterWeeksPerYear" class="mt-2 w-full rounded-xl border border-black/10 p-3"
+            <input id="ownerCharterWeeksPerYear" class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
               type="number" step="0.5" value={defaults.ownerCharterWeeksPerYear} />
           </div>
 
           <div>
             <label class="text-sm font-medium">Owner Charter-Out Rate per week (gross)</label>
-            <input id="ownerCharterRatePerWeek" class="mt-2 w-full rounded-xl border border-black/10 p-3"
+            <input id="ownerCharterRatePerWeek" class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
               type="number" step="1000" value={defaults.ownerCharterRatePerWeek} />
           </div>
 
           <div>
             <label class="text-sm font-medium">Resale Value after 5 years (% of purchase)</label>
-            <input id="resalePctAfter5y" class="mt-2 w-full rounded-xl border border-black/10 p-3"
+            <input id="resalePctAfter5y" class="mt-2 w-full max-w-[420px] rounded-xl border border-black/10 p-3 dark:border-white/10"
               type="number" step="0.01" value={defaults.resalePctAfter5y} />
           </div>
         </div>
@@ -161,7 +162,9 @@ const defaults = {
     </article>
 
     <script type="module">
-  import { runBuyVsCharter } from "@/utils/boatCalc";
+  import { runBuyVsCharter } from "../../utils/boatCalc";
+console.log("boat-vs-charter script loaded");
+
 
   const $ = (id) => document.getElementById(id);
 
@@ -183,48 +186,60 @@ const defaults = {
   };
 
   function render(rows) {
-    const body = $("resultsBody");
+  const body = $("resultsBody");
+  if (!body) return;
 
-    body.innerHTML = rows
-      .map((r, idx) => {
-        const zebra = idx % 2 === 0 ? "background: rgba(0,0,0,0.03);" : "";
-        const bold = r.year === "5Y Summary" ? "font-weight: 700;" : "";
+  const mode = rows?.[0]?.taxTreatment ?? "";
+  const summary = rows.find((x) => x.year === "5Y Summary") ?? rows[rows.length - 1];
 
-        return `
-          <tr style="${zebra}${bold}">
-            <td class="p-3 text-left">${r.year}</td>
-            <td class="p-3 text-right">${r.taxTreatment}</td>
-            <td class="p-3 text-right">${num(r.personalUseWeeks)}</td>
-            <td class="p-3 text-right">${money(r.charterNetWorth)}</td>
-            <td class="p-3 text-right">${money(r.buyNetWorth)}</td>
-            <td class="p-3 text-right">${money(r.deltaBuyMinusCharter)}</td>
-            <td class="p-3 text-right">${money(r.ownerRentalIncome)}</td>
-            <td class="p-3 text-right">${money(r.ownerOpCost)}</td>
-            <td class="p-3 text-right">${r.allowedDeductions === "" ? "" : money(r.allowedDeductions)}</td>
-            <td class="p-3 text-right">${r.taxableIncomeFromRent === "" ? "" : money(r.taxableIncomeFromRent)}</td>
-          </tr>
-        `;
-      })
-      .join("");
+  // Helpers for consistent cell styling (works with your Tailwind theme)
+  const trBase =
+    "text-black dark:text-white border-b border-black/10 dark:border-white/10";
+  const tdLeft = "p-3 text-left whitespace-nowrap";
+  const tdRight = "p-3 text-right whitespace-nowrap tabular-nums";
+  const tdRightWide = "p-3 text-right whitespace-nowrap tabular-nums min-w-[140px]";
 
-    const mode = rows[0]?.taxTreatment ?? "";
-    const summary = rows.find((x) => x.year === "5Y Summary") ?? rows[rows.length - 1];
+  body.innerHTML = rows
+    .map((r, idx) => {
+      const isSummary = r.year === "5Y Summary";
 
-    // Fill the summary boxes
-    $("modeValue").textContent = mode;
-    $("charter5y").textContent = money(summary.charterNetWorth);
-    $("buy5y").textContent = money(summary.buyNetWorth);
+      // Zebra + summary highlight (keeps it readable)
+      const zebraClass = idx % 2 === 0 ? "bg-black/0 dark:bg-white/0" : "bg-black/5 dark:bg-white/5";
+      const summaryClass = isSummary ? "bg-emerald-500/10 dark:bg-emerald-400/10 font-semibold" : "";
 
-    // Put the message in the Results banner
-    $("taxBanner").textContent =
-      mode === "SecondHome/Residence"
-        ? "Tax mode: Second Home / Residence (personal use > 14 days). Bonus depreciation disabled (simplified)."
-        : "Tax mode: Business Asset (personal use ≤ 14 days). 100% bonus depreciation in 2026 enabled (simplified).";
+      return `
+        <tr class="${trBase} ${zebraClass} ${summaryClass}">
+          <td class="${tdLeft}">${r.year}</td>
+          <td class="${tdRight}">${r.taxTreatment}</td>
+          <td class="${tdRight}">${num(r.personalUseWeeks)}</td>
 
-    // Optional: show same message up top if you kept taxBannerTop
-    const top = $("taxBannerTop");
-    if (top) top.textContent = $("taxBanner").textContent;
-  }
+          <td class="${tdRightWide}">${money(r.charterNetWorth)}</td>
+          <td class="${tdRightWide}">${money(r.buyNetWorth)}</td>
+          <td class="${tdRightWide}">${money(r.deltaBuyMinusCharter)}</td>
+
+          <td class="${tdRightWide}">${money(r.ownerRentalIncome)}</td>
+          <td class="${tdRightWide}">${money(r.ownerOpCost)}</td>
+
+          <td class="${tdRightWide}">${r.allowedDeductions === "" ? "" : money(r.allowedDeductions)}</td>
+          <td class="${tdRightWide}">${r.taxableIncomeFromRent === "" ? "" : money(r.taxableIncomeFromRent)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  // Fill the summary boxes
+  const modeValue = $("modeValue");
+  const charter5y = $("charter5y");
+  const buy5y = $("buy5y");
+
+  if (modeValue) modeValue.textContent = mode;
+  if (charter5y) charter5y.textContent = money(summary.charterNetWorth);
+  if (buy5y) buy5y.textContent = money(summary.buyNetWorth);
+
+  // Put the message in the Results banner
+  const bannerText =
+    mode === "SecondHome/Residence"
+      ? "Tax mode: Second Home / Residence (personal use > 14 days). Bonus
 
   function recalc() {
     const inputs = {
